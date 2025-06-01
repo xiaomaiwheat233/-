@@ -80,39 +80,6 @@ footer {
     border-top: 1px solid #e0e0e0;
 }
 
-/* 移动端适配 */
-@media (max-width: 700px) {
-    .sidebar {
-        position: static;
-        width: 100%;
-        height: auto;
-        flex-direction: row;
-        flex-wrap: wrap;
-        box-shadow: none;
-        padding: 12px 6px;
-        justify-content: center;
-    }
-    .sidebar label,
-    .sidebar input,
-    .sidebar button {
-        width: 90vw;
-        max-width: 400px;
-        margin: 4px auto;
-        display: block;
-    }
-    .main-content {
-        margin-left: 0;
-    }
-    main {
-        padding: 0 4px;
-    }
-    #functionCanvas {
-        width: 98vw !important;
-        max-width: 100%;
-        height: 220px !important;
-    }
-}
-
 .input-tip {
     font-size: 0.92rem;
     color: #888;
