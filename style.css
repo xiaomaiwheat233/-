@@ -112,3 +112,21 @@ footer {
         height: 220px !important;
     }
 }
+
+.input-tip {
+    font-size: 0.92rem;
+    color: #888;
+    background: transparent;
+    padding: 0 2px;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    min-height: 18px;
+    text-align: left;
+}
+.input-tip.success {
+    color: #388e3c;
+}
+.input-tip.error {
+    color: #d32f2f;
+}

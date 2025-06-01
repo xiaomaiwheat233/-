@@ -5,8 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>函数绘制</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 简单遮罩和登录框样式 */
+        #loginMask {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.3);
+        }
+        #loginBox {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #888;
+            padding: 32px 32px 24px 32px;
+            min-width: 300px;
+            text-align: center;
+        }
+        #loginBox input {
+            width: 90%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        #loginBox button {
+            width: 100%;
+            padding: 10px;
+            background: #4285f4;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-top: 12px;
+            cursor: pointer;
+        }
+        #loginBox .error-message {
+            color: #d00;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+        /* 新增：白色遮罩样式 */
+        #whiteMask {
+            display: none;
+            position: fixed;
+            z-index: 9998;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            background: #fff;
+        }
+    </style>
 </head>
 <body>
+    <!-- 登录遮罩和弹窗 -->
+    <div id="loginMask"></div>
+    <div id="loginBox">
+        <h2>登录</h2>
+        <form id="loginForm">
+            <input type="text" id="loginUsername" placeholder="账号" autocomplete="username" required><br>
+            <input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password" required><br>
+            <div style="display:flex;gap:8px;">
+                <button type="submit" id="loginSubmitBtn" style="flex:1;">登录</button>
+                <button type="button" id="registerBtn" style="background:#4caf50;flex:1;">注册</button>
+            </div>
+            <div class="error-message" id="loginError"></div>
+        </form>
+    </div>
+    <!-- 注册弹窗 -->
+    <div id="registerBox" style="display:none;position:fixed;z-index:10001;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;box-shadow:0 2px 16px #888;padding:32px 32px 24px 32px;min-width:320px;text-align:center;">
+        <h2 style="margin-bottom:24px;">注册</h2>
+        <form id="registerForm" autocomplete="off">
+            <div style="width:90%;margin:0 auto;">
+                <input type="text" id="registerUsername" placeholder="新账号" required
+                    style="width:100%;padding:8px;margin:10px 0 0 0;
+                    border:1px solid #ccc;border-radius:4px;font-size:1rem;display:block;">
+                <div id="usernameTip" class="input-tip" style="margin-left:8px;margin-top:2px;text-align:left;">
+                    账号由字母、数字组成，长度大于3位
+                </div>
+            </div>
+            <div style="width:90%;margin:0 auto;">
+                <input type="password" id="registerPassword" placeholder="设置密码" required
+                    style="width:100%;padding:8px;margin:10px 0 0 0;
+                    border:1px solid #ccc;border-radius:4px;font-size:1rem;display:block;">
+                <div id="passwordTip" class="input-tip" style="margin-left:8px;margin-top:2px;text-align:left;">
+                    密码需包含字母和数字，长度大于8位
+                </div>
+            </div>
+            <div style="width:90%;margin:0 auto;">
+                <input type="password" id="registerPassword2" placeholder="确认密码" required
+                    style="width:100%;padding:8px;margin:10px 0 0 0;
+                    border:1px solid #ccc;border-radius:4px;font-size:1rem;display:block;">
+                <div id="password2Tip" class="input-tip" style="margin-left:8px;margin-top:2px;text-align:left;">
+                    请再次输入密码
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:18px;">
+                <button type="submit" id="registerSubmitBtn"
+                    style="flex:1;background:#4285f4;color:#fff;padding:10px;border:none;border-radius:4px;font-size:1rem;cursor:pointer;">
+                    注册
+                </button>
+                <button type="button" id="cancelRegisterBtn"
+                    style="flex:1;background:#4caf50;color:#fff;padding:10px;border:none;border-radius:4px;font-size:1rem;cursor:pointer;">
+                    取消
+                </button>
+            </div>
+            <div class="error-message" id="registerError"></div>
+        </form>
+    </div>
+    <!-- 用户信息栏 -->
+    <div id="userBar" style="display:none;position:fixed;top:18px;right:32px;z-index:20000;font-size:1rem;">
+        <span id="welcomeUser"></span>
+        <button id="logoutBtn" style="margin-left:12px;padding:4px 12px;font-size:1rem;border-radius:4px;border:none;background:#4285f4;color:#fff;cursor:pointer;">退出登录</button>
+    </div>
     <div class="sidebar">
         <label for="functionInput">函数表达式:</label>
         <input type="text" id="functionInput" placeholder="如 x^2, sin(x)">
@@ -26,12 +141,185 @@
             <p>Copyright 2025 函数绘制器</p>
         </footer>
     </div>
+    <div id="whiteMask"></div>
     <script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.2/lib/browser/math.js"></script>
     <script src="plot.js"></script>
     <script>
+    // 登录逻辑
+    function showLogin() {
+        document.getElementById('loginMask').style.display = 'block';
+        document.getElementById('loginBox').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        document.getElementById('userBar').style.display = 'none';
+        // 显示白色遮罩
+        document.getElementById('whiteMask').style.display = 'block';
+    }
+    function hideLogin() {
+        document.getElementById('loginMask').style.display = 'none';
+        document.getElementById('loginBox').style.display = 'none';
+        document.body.style.overflow = '';
+        document.getElementById('userBar').style.display = 'block';
+        document.getElementById('welcomeUser').textContent = '欢迎 ' + (localStorage.getItem('username') || '');
+        // 隐藏白色遮罩
+        document.getElementById('whiteMask').style.display = 'none';
+    }
+    function isLoggedIn() {
+        return localStorage.getItem('isLoggedIn') === 'true';
+    }
+    if (!isLoggedIn()) {
+        showLogin();
+    } else {
+        document.getElementById('userBar').style.display = 'block';
+        document.getElementById('welcomeUser').textContent = '欢迎 ' + (localStorage.getItem('username') || '');
+        document.getElementById('whiteMask').style.display = 'none';
+    }
+    document.getElementById('loginForm').onsubmit = function(e) {
+        e.preventDefault();
+        var username = document.getElementById('loginUsername').value.trim();
+        var password = document.getElementById('loginPassword').value;
+        var error = document.getElementById('loginError');
+        var users = JSON.parse(localStorage.getItem('users') || '{}');
+        if (
+            (username === 'teacher123' && password === '114514') ||
+            (users[username] && users[username] === password)
+        ) {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('username', username);
+            hideLogin();
+        } else {
+            error.textContent = '账号或密码错误';
+        }
+    };
+    document.getElementById('logoutBtn').onclick = function() {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('username');
+        showLogin();
+    };
     document.getElementById('exampleButton').onclick = function() {
         window.location.href = 'examples.html';
     };
+    // 注册逻辑
+    document.getElementById('registerBtn').onclick = function() {
+        document.getElementById('registerBox').style.display = 'block';
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('registerError').textContent = '';
+        document.getElementById('registerForm').reset();
+    };
+    document.getElementById('cancelRegisterBtn').onclick = function() {
+        document.getElementById('registerBox').style.display = 'none';
+        document.getElementById('loginBox').style.display = 'block';
+    };
+    // 密码检测函数
+function checkPasswordRule(pwd) {
+    if (pwd.length < 9) return '长度需大于8位';
+    if (!/[a-zA-Z]/.test(pwd)) return '需包含字母';
+    if (!/[0-9]/.test(pwd)) return '需包含数字';
+    return '';
+}
+
+document.getElementById('registerPassword').oninput = function() {
+    const pwd = this.value;
+    const tip = document.getElementById('passwordTip');
+    if (!pwd) {
+        tip.className = 'input-tip';
+        tip.textContent = '密码需包含字母和数字，长度大于8位';
+        return;
+    }
+    const msg = checkPasswordRule(pwd);
+    if (msg) {
+        tip.className = 'input-tip error';
+        tip.textContent = msg;
+    } else {
+        tip.className = 'input-tip success';
+        tip.textContent = '格式正确';
+    }
+};
+
+document.getElementById('registerPassword2').oninput = function() {
+    const pwd1 = document.getElementById('registerPassword').value;
+    const pwd2 = this.value;
+    const tip = document.getElementById('password2Tip');
+    if (!pwd2) {
+        tip.className = 'input-tip';
+        tip.textContent = '请再次输入密码';
+        return;
+    }
+    if (pwd2 !== pwd1) {
+        tip.className = 'input-tip error';
+        tip.textContent = '两次密码不一致';
+    } else {
+        tip.className = 'input-tip success';
+        tip.textContent = '密码一致';
+    }
+};
+
+function checkUsernameRule(username) {
+    if (username.length < 4) return '长度需大于3位';
+    if (!/^[a-zA-Z0-9]+$/.test(username)) return '只能包含字母和数字';
+    return '';
+}
+
+document.getElementById('registerUsername').oninput = function() {
+    const username = this.value;
+    const tip = document.getElementById('usernameTip');
+    if (!username) {
+        tip.className = 'input-tip';
+        tip.textContent = '账号由字母、数字组成，长度大于3位';
+        return;
+    }
+    const msg = checkUsernameRule(username);
+    if (msg) {
+        tip.className = 'input-tip error';
+        tip.textContent = msg;
+    } else {
+        tip.className = 'input-tip success';
+        tip.textContent = '格式正确';
+    }
+};
+
+document.getElementById('registerForm').onsubmit = function(e) {
+    e.preventDefault();
+    var username = document.getElementById('registerUsername').value.trim();
+    var password = document.getElementById('registerPassword').value;
+    var password2 = document.getElementById('registerPassword2').value;
+    var error = document.getElementById('registerError');
+    var usernameMsg = checkUsernameRule(username);
+    var pwdMsg = checkPasswordRule(password);
+    if (!username || !password || !password2) {
+        error.textContent = '账号和密码不能为空';
+        return;
+    }
+    if (usernameMsg) {
+        error.textContent = usernameMsg;
+        return;
+    }
+    if (pwdMsg) {
+        error.textContent = pwdMsg;
+        return;
+    }
+    if (password !== password2) {
+        error.textContent = '两次输入密码不一致';
+        return;
+    }
+    // 检查是否已存在
+    var users = JSON.parse(localStorage.getItem('users') || '{}');
+    if (users[username] || username === 'teacher123') {
+        error.textContent = '账号已存在';
+        return;
+    }
+    users[username] = password;
+    localStorage.setItem('users', JSON.stringify(users));
+    error.style.color = '#4caf50';
+    error.textContent = '注册成功，请登录';
+    setTimeout(function() {
+        error.style.color = '#d00';
+        document.getElementById('registerBox').style.display = 'none';
+        document.getElementById('loginBox').style.display = 'block';
+        document.getElementById('loginUsername').value = username;
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginError').textContent = '';
+    }, 800);
+};
     </script>
 </body>
 </html>
