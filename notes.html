@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>笔记录入</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #fafbfc; }
+        .notes-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            padding: 32px 36px;
+        }
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .notes-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+        .note-card {
+            width: 200px;
+            background: #f5f7fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 18px 14px;
+            cursor: pointer;
+            transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s;
+        }
+        .note-card:hover {
+            transform: scale(1.06);
+            box-shadow: 0 8px 24px rgba(66,133,244,0.13);
+        }
+        .note-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+        .note-meta {
+            color: #888;
+            font-size: 0.92rem;
+        }
+        .upload-label {
+            display: inline-block;
+            background: #4285f4;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.18s;
+        }
+        .upload-label:hover { background: #3367d6; }
+        #noteFileInput { display: none; }
+        #backToHome {
+            position: fixed;
+            bottom: 18px;
+            left: 32px;
+            z-index: 20000;
+            font-size: 1rem;
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: none;
+            background: #4caf50;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="notes-container">
+        <div class="notes-header" style="display:flex;align-items:center;gap:32px;margin-bottom:32px;">
+            <h2 style="margin:0;flex-shrink:0;">我的学习笔记</h2>
+            <label class="upload-label" style="margin-left:auto;">
+                <span style="font-size:1.05rem;">上传笔记</span>
+                <input type="file" id="noteFileInput" accept=".pdf,.txt,.docx" />
+            </label>
+            <span style="color:#888;font-size:0.98rem;margin-left:12px;">支持 docx、txt、pdf 文件</span>
+        </div>
+        <div class="notes-list" id="notesList">
+            <!-- 卡片自动生成 -->
+        </div>
+        <button id="backToHome">返回首页</button>
+    </div>
+    <script>
+    // 简单本地存储实现（生产环境请用后端！）
+    function getNotes() {
+        return JSON.parse(localStorage.getItem('userNotes') || '[]');
+    }
+    function saveNotes(notes) {
+        localStorage.setItem('userNotes', JSON.stringify(notes));
+    }
+    function renderNotes() {
+        const notes = getNotes();
+        const list = document.getElementById('notesList');
+        list.innerHTML = '';
+        if (notes.length === 0) {
+            list.innerHTML = '<div style="color:#888;padding:32px;">暂无笔记，快来上传吧！</div>';
+            return;
+        }
+        notes.forEach((note, idx) => {
+            const card = document.createElement('div');
+            card.className = 'note-card';
+            card.onclick = (e) => {
+                // 避免点击删除按钮时跳转
+                if (e.target.classList.contains('delete-btn')) return;
+                window.location.href = `note_view.html?id=${note.id}`;
+            };
+            card.innerHTML = `
+                <div class="note-title">${note.name}</div>
+                <div class="note-meta">${note.type.toUpperCase()} · ${note.size}</div>
+                <div class="note-meta">${note.date}</div>
+                <button class="favorite-btn" style="margin-top:10px;margin-right:8px;background:${note.favorite ? '#ffd600' : '#eee'};color:#333;border:none;border-radius:4px;padding:6px 14px;cursor:pointer;">
+                    ${note.favorite ? '★ 已收藏' : '☆ 收藏'}
+                </button>
+                <button class="delete-btn" style="margin-top:10px;background:#d32f2f;color:#fff;border:none;border-radius:4px;padding:6px 14px;cursor:pointer;">删除</button>
+            `;
+            // 删除按钮事件
+            card.querySelector('.delete-btn').onclick = function(ev) {
+                ev.stopPropagation();
+                if (confirm('确定要删除该笔记吗？')) {
+                    const notesArr = getNotes().filter(n => n.id !== note.id);
+                    saveNotes(notesArr);
+                    renderNotes();
+                }
+            };
+            // 收藏按钮事件
+            card.querySelector('.favorite-btn').onclick = function(ev) {
+                ev.stopPropagation();
+                const notesArr = getNotes().map(n => {
+                    if (n.id === note.id) {
+                        n.favorite = !n.favorite;
+                    }
+                    return n;
+                });
+                saveNotes(notesArr);
+                renderNotes();
+            };
+            list.appendChild(card);
+        });
+    }
+    // 文件上传
+    document.getElementById('noteFileInput').onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const notes = getNotes();
+            const id = Date.now() + Math.random().toString(36).slice(2,8);
+            notes.push({
+                id,
+                name: file.name,
+                type: file.name.split('.').pop(),
+                size: (file.size/1024).toFixed(1) + 'KB',
+                date: new Date().toLocaleString(),
+                content: evt.target.result,
+                favorite: false // 新增
+            });
+            saveNotes(notes);
+            renderNotes();
+        };
+        // 只预览文本和pdf，word文件只存储不可预览
+       if (/\.(txt|pdf|docx)$/i.test(file.name)) {
+        reader.readAsDataURL(file);
+    } else {
+    reader.readAsArrayBuffer(file);
+    }
+    };
+    renderNotes();
+    document.getElementById('backToHome').onclick = function() {
+        window.location.href = 'index.html';
+    };
+    card.querySelector('.favorite-btn').onclick = function(ev) {
+    ev.stopPropagation();
+    note.favorite = !note.favorite;
+    saveNotes(notes);
+    renderNotes();
+};
+    </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>函数绘制</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #userBar {
+            position: fixed;
+            top: 18px;
+            right: 32px;
+            z-index: 20000;
+            font-size: 1rem;
+        }
+        #userBar button {
+            margin-left: 12px;
+            padding: 4px 12px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: none;
+            background: #4285f4;
+            color: #fff;
+            cursor: pointer;
+        }
+        #backToHome {
+            position: fixed;
+            bottom: 18px;
+            left: 32px;
+            z-index: 20000;
+            font-size: 1rem;
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: none;
+            background: #4caf50;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- 用户信息栏 -->
+    <div id="userBar" style="display:none;">
+        <span id="welcomeUser"></span>
+        <button id="logoutBtn">退出登录</button>
+    </div>
+    <!-- 返回首页按钮 -->
+    <button id="backToHome">返回首页</button>
+    <div class="sidebar">
+        <label for="functionInput">函数表达式:</label>
+        <input type="text" id="functionInput" placeholder="如 x^2, sin(x)">
+        <button id="plotButton">绘制图像</button>
+        <button id="zoomInButton">放大</button>
+        <button id="zoomOutButton">缩小</button>
+        <button id="exampleButton" type="button">常见可解析函数用法示例</button>
+    </div>
+    <div class="main-content">
+        <header>
+            <h1>函数绘制器</h1>
+        </header>
+        <main>
+            <canvas id="functionCanvas" width="800" height="400"></canvas>
+        </main>
+        <footer>
+            <p>Copyright 2025 函数绘制器</p>
+        </footer>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.2/lib/browser/math.js"></script>
+    <script src="plot.js"></script>
+    <script>
+    // 登录状态校验与欢迎栏
+    function isLoggedIn() {
+        return localStorage.getItem('isLoggedIn') === 'true';
+    }
+    function showUserBar() {
+        document.getElementById('userBar').style.display = 'block';
+        document.getElementById('welcomeUser').textContent = '欢迎 ' + (localStorage.getItem('username') || '');
+    }
+    if (!isLoggedIn()) {
+        // 未登录跳转回首页
+        window.location.href = 'index.html';
+    } else {
+        showUserBar();
+    }
+    document.getElementById('logoutBtn').onclick = function() {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('username');
+        window.location.href = 'index.html';
+    };
+    document.getElementById('exampleButton').onclick = function() {
+        window.location.href = 'examples.html';
+    };
+    // 返回首页按钮逻辑
+    document.getElementById('backToHome').onclick = function() {
+        window.location.href = 'index.html';
+    };
+    </script>
+</body>
+</html>

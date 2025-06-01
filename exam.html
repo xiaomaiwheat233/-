@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>函数真题</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .exam-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            padding: 32px 36px;
+        }
+
+        .exam-header {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .add-exam-btn {
+            background: #4285f4;
+            color: #fff;
+            padding: 8px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            transition: background 0.18s;
+            margin-left: auto;
+            border: none;
+        }
+
+        .add-exam-btn:hover {
+            background: #3367d6;
+        }
+
+        .exam-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .exam-card {
+            width: 260px;
+            background: #f5f7fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            padding: 18px 14px;
+            cursor: pointer;
+            transition: transform 0.22s cubic-bezier(.34, 1.56, .64, 1), box-shadow 0.22s;
+        }
+
+        .exam-card:hover {
+            transform: scale(1.06);
+            box-shadow: 0 8px 24px rgba(66, 133, 244, 0.13);
+        }
+
+        .exam-title {
+            font-weight: bold;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+
+        .exam-meta {
+            color: #888;
+            font-size: 0.92rem;
+            margin-bottom: 6px;
+        }
+
+        .delete-btn {
+            margin-top: 10px;
+            background: #d32f2f;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 14px;
+            cursor: pointer;
+        }
+
+        #backToHome {
+            position: fixed;
+            bottom: 18px;
+            left: 32px;
+            z-index: 20000;
+            font-size: 1rem;
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: none;
+            background: #4caf50;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .favorite-btn {
+            transition: background 0.18s, color 0.18s;
+        }
+
+        .favorite-btn:hover {
+            background: #ffd600 !important;
+            color: #222 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="exam-container">
+        <div class="exam-header">
+            <h2 style="margin:0;flex-shrink:0;">函数真题</h2>
+            <button class="add-exam-btn" id="addExamBtn">添加真题</button>
+        </div>
+        <div class="exam-list" id="examList"></div>
+    </div>
+    <button id="backToHome">返回首页</button>
+    <!-- 添加真题弹窗 -->
+    <div id="examModal"
+        style="display:none;position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:9999;background:rgba(0,0,0,0.18);">
+        <div
+            style="background:#fff;max-width:420px;margin:80px auto;padding:32px 24px;border-radius:10px;box-shadow:0 2px 16px #aaa;position:relative;">
+            <h3 style="margin-top:0;">添加函数真题</h3>
+            <div style="margin-bottom:12px;">
+                <label>原题重现：</label><br>
+                <textarea id="examQ" style="width:100%;height:60px;border-radius:4px;padding:6px;"></textarea>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label>知识点：</label><br>
+                <input id="examPoint" style="width:100%;border-radius:4px;padding:6px;" />
+            </div>
+            <div style="margin-bottom:12px;">
+                <label>解析：</label><br>
+                <textarea id="examA" style="width:100%;height:80px;border-radius:4px;padding:6px;"></textarea>
+            </div>
+            <div style="text-align:right;">
+                <button id="cancelExamBtn"
+                    style="margin-right:12px;padding:6px 18px;border-radius:4px;border:none;background:#888;color:#fff;">取消</button>
+                <button id="saveExamBtn"
+                    style="padding:6px 18px;border-radius:4px;border:none;background:#4285f4;color:#fff;">保存</button>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        function getExams() {
+            return JSON.parse(localStorage.getItem('userExams') || '[]');
+        }
+        function saveExams(exams) {
+            localStorage.setItem('userExams', JSON.stringify(exams));
+        }
+        function renderExams() {
+            const exams = getExams();
+            const list = document.getElementById('examList');
+            list.innerHTML = '';
+            if (exams.length === 0) {
+                list.innerHTML = '<div style="color:#888;padding:32px;">暂无真题，快来添加吧！</div>';
+                return;
+            }
+            exams.forEach((exam, idx) => {
+                const card = document.createElement('div');
+                card.className = 'exam-card';
+                card.onclick = (e) => {
+                    if (e.target.classList.contains('delete-btn')) return;
+                    window.location.href = `exam_view.html?id=${exam.id}`;
+                };
+                card.innerHTML = `
+                <div class="exam-title">${exam.question.slice(0, 30)}${exam.question.length > 30 ? '...' : ''}</div>
+                <div class="exam-meta">知识点：${exam.point || '未填写'}</div>
+                <div class="exam-meta">${exam.date}</div>
+                <button class="favorite-btn" style="margin-top:10px;margin-right:8px;background:${exam.favorite ? '#ffd600' : '#eee'};color:#333;border:none;border-radius:4px;padding:6px 14px;cursor:pointer;">
+                    ${exam.favorite ? '★ 已收藏' : '☆ 收藏'}
+                </button>
+                <button class="delete-btn">删除</button>
+            `;
+                card.querySelector('.delete-btn').onclick = function (ev) {
+                    ev.stopPropagation();
+                    if (confirm('确定要删除该真题吗？')) {
+                        const examsArr = getExams().filter(n => n.id !== exam.id);
+                        saveExams(examsArr);
+                        renderExams();
+                    }
+                };
+                 card.querySelector('.favorite-btn').onclick = function (ev) {
+            ev.stopPropagation();
+            exam.favorite = !exam.favorite;
+            saveExams(exams);
+            renderExams();
+        };
+                list.appendChild(card);
+            });
+        }
+        // 弹窗逻辑
+        document.getElementById('addExamBtn').onclick = function () {
+            document.getElementById('examModal').style.display = 'block';
+            document.getElementById('examQ').value = '';
+            document.getElementById('examPoint').value = '';
+            document.getElementById('examA').value = '';
+        };
+        document.getElementById('cancelExamBtn').onclick = function () {
+            document.getElementById('examModal').style.display = 'none';
+        };
+        document.getElementById('saveExamBtn').onclick = function () {
+            const question = document.getElementById('examQ').value.trim();
+            const point = document.getElementById('examPoint').value.trim();
+            const answer = document.getElementById('examA').value.trim();
+            if (!question || !answer) {
+                alert('原题和解析不能为空！');
+                return;
+            }
+            const exams = getExams();
+            const id = Date.now() + Math.random().toString(36).slice(2, 8);
+            exams.push({
+                id,
+                question,
+                point,
+                answer,
+                date: new Date().toLocaleString(),
+                favorite: false // 新增
+            });
+            saveExams(exams);
+            document.getElementById('examModal').style.display = 'none';
+            renderExams();
+        };
+        renderExams();
+        document.getElementById('backToHome').onclick = function () {
+            window.location.href = 'index.html';
+        };
+       
+    </script>
+</body>
+
+</html>

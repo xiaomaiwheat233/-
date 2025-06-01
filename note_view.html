@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>笔记阅读</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .note-view-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            padding: 32px 36px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .note-title {
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+        }
+        .note-meta {
+            color: #888;
+            font-size: 0.98rem;
+            margin-bottom: 18px;
+        }
+        .note-content {
+            min-height: 300px;
+            background: #f8fafd;
+            border-radius: 8px;
+            padding: 18px;
+            white-space: pre-wrap;
+            font-size: 1.1rem;
+            color: #222;
+            overflow-x: auto;
+            transition: background 0.3s, color 0.3s;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 28px;
+            background: #4285f4;
+            color: #fff;
+            padding: 8px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .back-link:hover { background: #3367d6; }
+        .pdf-viewer { width: 100%; height: 500px; border: none; }
+        /* 风格背景 */
+        .paper-bg { background: #f3e9d7 !important; }
+        .dark-bg { background: #181a1b !important; }
+        .green-bg { background: #e2f7ea !important; }
+        .default-bg { background: #fafbfc !important; }
+        /* 容器风格 */
+        .note-view-container.paper {
+            background: #f8f5e6;
+            box-shadow: 0 2px 12px #e6e2d3;
+        }
+        .note-view-container.dark {
+            background: #23272e;
+            box-shadow: 0 2px 16px #000;
+        }
+        .note-view-container.green {
+            background: #eafaf1;
+            box-shadow: 0 2px 12px #bde5c8;
+        }
+        /* 内容风格 */
+        .note-content.paper {
+            background: #f8f5e6;
+            color: #3e2f1c;
+            font-family: 'Times New Roman', '仿宋', serif;
+            box-shadow: 0 2px 12px #e6e2d3;
+        }
+        .note-content.dark {
+            background: #23272e;
+            color: #e0e0e0;
+            font-family: 'Consolas', '微软雅黑', monospace;
+        }
+        .note-content.green {
+            background: #eafaf1;
+            color: #1b3b2a;
+            font-family: '微软雅黑', 'Arial', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="note-view-container default" id="noteView"></div>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
+    <script>
+    // 获取参数
+    function getQuery(name) {
+        const m = location.search.match(new RegExp(`[?&]${name}=([^&]+)`));
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+    const id = getQuery('id');
+    const notes = JSON.parse(localStorage.getItem('userNotes') || '[]');
+    const note = notes.find(n => n.id === id);
+    const view = document.getElementById('noteView');
+
+    // 渲染整个界面（按钮、内容、标题等）
+    function renderNoteView(note) {
+        view.innerHTML = `
+        <div style="display:flex;justify-content: flex-end;gap:18px;margin-bottom:18px;">
+            <div>
+                <label for="styleSelect"><b>风格：</b></label>
+                <select id="styleSelect" style="padding:4px 10px;border-radius:4px;">
+                    <option value="default">默认</option>
+                    <option value="paper">纸质书</option>
+                    <option value="dark">深色</option>
+                    <option value="green">护眼绿</option>
+                </select>
+            </div>
+            <div>
+                <b>字体缩放：</b>
+                <button id="fontMinus" style="width:28px;height:28px;font-size:1.2rem;">-</button>
+                <span id="fontSizeShow" style="display:inline-block;width:36px;text-align:center;">1.1</span>
+                <button id="fontPlus" style="width:28px;height:28px;font-size:1.2rem;">+</button>
+            </div>
+        </div>
+        <div class="note-title">${note ? note.name : ''}</div>
+        <div class="note-meta">${note ? (note.type.toUpperCase() + ' · ' + note.size + ' · ' + note.date) : ''}</div>
+        <div class="note-content" id="contentBox"></div>
+        <a class="back-link" href="notes.html">返回笔记列表</a>
+        `;
+    }
+
+    // 字体缩放和风格切换逻辑
+    function bindStyleAndFontEvents() {
+        let fontSize = 1.1;
+        const fontSizeShow = document.getElementById('fontSizeShow');
+        document.getElementById('fontMinus').onclick = function() {
+            if (fontSize > 0.7) fontSize = Math.max(0.7, fontSize - 0.1);
+            fontSizeShow.textContent = fontSize.toFixed(1);
+            setFontSize();
+        };
+        document.getElementById('fontPlus').onclick = function() {
+            if (fontSize < 2.5) fontSize = Math.min(2.5, fontSize + 0.1);
+            fontSizeShow.textContent = fontSize.toFixed(1);
+            setFontSize();
+        };
+        document.getElementById('styleSelect').onchange = function() {
+            applyStyleAndFont();
+        };
+        function setFontSize() {
+            const box = document.getElementById('contentBox');
+            if (box) box.style.fontSize = fontSize + 'rem';
+        }
+        function applyStyleAndFont() {
+            setFontSize();
+            const style = document.getElementById('styleSelect').value;
+            const box = document.getElementById('contentBox');
+            if (box) box.className = 'note-content ' + style;
+            document.querySelector('.note-view-container').className = 'note-view-container ' + style;
+            document.body.className = style + '-bg';
+        }
+        // 初始应用一次
+        applyStyleAndFont();
+        // 暴露给内容渲染后调用
+        window.applyStyleAndFont = applyStyleAndFont;
+    }
+
+    // 渲染内容
+    function renderContent(note) {
+        if (!note) {
+            document.getElementById('contentBox').innerHTML = '<div style="color:#d32f2f;">未找到该笔记</div>';
+            window.applyStyleAndFont();
+            return;
+        }
+        if (/txt$/i.test(note.type)) {
+            fetch(note.content)
+                .then(res => res.text())
+                .then(text => {
+                    document.getElementById('contentBox').textContent = text;
+                    window.applyStyleAndFont();
+                });
+        } else if (/pdf$/i.test(note.type)) {
+            document.getElementById('contentBox').innerHTML = `<iframe class="pdf-viewer" src="${note.content}"></iframe>`;
+            window.applyStyleAndFont();
+        } else if (/docx$/i.test(note.type)) {
+            const arrayBuffer = base64ToArrayBuffer(note.content);
+            mammoth.convertToHtml({arrayBuffer}).then(function(result){
+                document.getElementById('contentBox').innerHTML = result.value;
+                window.applyStyleAndFont();
+            }).catch(function(e){
+                document.getElementById('contentBox').innerHTML = '<span style="color:#d32f2f;">docx解析失败</span>';
+                window.applyStyleAndFont();
+            });
+        } else {
+            let downloadHtml = '';
+            if (note.content && note.content.data) {
+                const blob = new Blob([new Uint8Array(note.content.data)], {type: "application/octet-stream"});
+                const url = URL.createObjectURL(blob);
+                downloadHtml = `<br><a href="${url}" download="${note.name}" style="color:#4285f4;text-decoration:underline;margin-top:16px;display:inline-block;">点击下载</a>`;
+            }
+            document.getElementById('contentBox').innerHTML = `<span style="color:#888;">暂不支持预览该类型文件，请下载后用本地软件打开。</span>${downloadHtml}`;
+            window.applyStyleAndFont();
+        }
+    }
+
+    // base64转ArrayBuffer
+    function base64ToArrayBuffer(base64) {
+        var binary_string = window.atob(base64.split(',')[1]);
+        var len = binary_string.length;
+        var bytes = new Uint8Array(len);
+        for (var i = 0; i < len; i++) {
+            bytes[i] = binary_string.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    // 初始化
+    renderNoteView(note);
+    bindStyleAndFontEvents();
+    renderContent(note);
+    </script>
+</body>
+</html>

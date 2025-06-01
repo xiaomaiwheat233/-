@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>真题详情</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .exam-view-container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            padding: 32px 36px;
+        }
+        .exam-title {
+            font-weight: bold;
+            font-size: 1.15rem;
+            margin-bottom: 18px;
+        }
+        .exam-meta {
+            color: #888;
+            font-size: 0.98rem;
+            margin-bottom: 18px;
+        }
+        .exam-section {
+            margin-bottom: 18px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 28px;
+            background: #4285f4;
+            color: #fff;
+            padding: 8px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .back-link:hover { background: #3367d6; }
+        #backToHome {
+            position: fixed;
+            bottom: 18px;
+            left: 32px;
+            z-index: 20000;
+            font-size: 1rem;
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: none;
+            background: #4caf50;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="exam-view-container" id="examView"></div>
+    <script>
+    function getQuery(name) {
+        const m = location.search.match(new RegExp(`[?&]${name}=([^&]+)`));
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+    const id = getQuery('id');
+    const exams = JSON.parse(localStorage.getItem('userExams') || '[]');
+    const exam = exams.find(n => n.id === id);
+    const view = document.getElementById('examView');
+    if (!exam) {
+        view.innerHTML = '<div style="color:#d32f2f;">未找到该真题</div>';
+    } else {
+        view.innerHTML = `
+            <div class="exam-title">原题重现</div>
+            <div class="exam-section">${exam.question.replace(/\n/g, '<br>')}</div>
+            <div class="exam-meta">知识点：${exam.point || '未填写'}　|　${exam.date}</div>
+            <div class="exam-title">解析</div>
+            <div class="exam-section">${exam.answer.replace(/\n/g, '<br>')}</div>
+            <a class="back-link" href="exam.html">返回真题列表</a>
+        `;
+    }
+     renderNotes();
+    document.getElementById('backToHome').onclick = function() {
+        window.location.href = 'index.html';
+    };
+    </script>
+</body>
+</html>
